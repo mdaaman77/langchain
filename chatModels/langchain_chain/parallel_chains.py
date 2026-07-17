@@ -6,9 +6,10 @@ from typing import Literal
 import logging
 from langchain_core.output_parsers import PydanticOutputParser, StrOutputParser
 from langchain_core.prompts import PromptTemplate
-from langchain_core.runnables import RunnableParallel,RunnableBranch
-
+from langchain_core.runnables import RunnableParallel,RunnableBranch, RunnablePassthrough, RunnableSequence
+import os
 load_dotenv()
+
 
 
 
@@ -47,13 +48,20 @@ try:
      template='Merge the provided notes and quiz into a single document \n notes -> {notes} and quiz -> {quiz}',
     input_variables=['notes', 'quiz']
 )
-
+    notes =  prompt1 | model | strParser,
     branch_chain = RunnableParallel({
-        'notes' : prompt1 | model | strParser,
+        'notes' : RunnablePassthrough(),
         'quiz' : prompt2 | gemini_model | strParser}
     )
     
-    chain = branch_chain | prompt3 | gemini_model | strParser
+    #chain =notes |  branch_chain | prompt3 | gemini_model | strParser
+    chain = RunnableSequence(
+    notes,
+    branch_chain,
+    prompt3,
+    gemini_model,
+    strParser
+)
 
     text = """
 Support vector machines (SVMs) are a set of supervised learning methods used for classification, regression and outliers detection.
